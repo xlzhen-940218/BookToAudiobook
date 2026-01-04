@@ -1,0 +1,70 @@
+# DeepSeek API配置
+# 注意：API密钥已移至单独的配置文件 api_keys.yaml
+# 请创建 api_keys.yaml 文件并添加您的API密钥
+deepseek:
+  # api_key: "your-api-key-here"  # 已移至 api_keys.yaml
+  base_url: "https://api.deepseek.com"
+  model: "deepseek-chat"
+
+# 语音合成配置
+tts:
+  # 默认音色（旁白）
+  narrator_voice: "zh-CN-XiaoxiaoNeural"
+  
+  # 角色音色配置
+  character_voices:
+    # 默认音色（当角色没有特定音色或随机分配时使用）
+    default: "zh-CN-YunxiNeural"
+    # 可以在这里添加特定角色的音色映射（优先级最高）
+    # 例如: "张三": "zh-CN-YunyangNeural"
+    
+    # 角色性别配置（用于音色选择和pitch调整）
+    # 可以在这里添加特定角色的性别配置
+    # 例如: "张三": "male", "李四": "female"
+    character_genders: {}
+    
+    # 随机音色分配选项
+    random_assignment: true  # 是否启用随机音色分配
+    # 可用的中文音色列表（用于随机分配）- 使用可靠可用的音色
+    available_chinese_voices:
+      - "zh-CN-XiaoxiaoNeural"  # 女声，可靠（旁白默认）
+      - "zh-CN-YunxiNeural"     # 男声，可靠（角色默认）
+      - "zh-CN-YunyangNeural"   # 男声，可靠
+      - "zh-CN-XiaoyiNeural"    # 女声，可靠
+    
+    # 音色性别分类（用于自动分配）
+    male_voices:
+      - "zh-CN-YunxiNeural"
+      - "zh-CN-YunyangNeural"
+    female_voices:
+      - "zh-CN-XiaoxiaoNeural"
+      - "zh-CN-XiaoyiNeural"
+  
+  # 语音参数
+  rate: "+0%"
+  volume: "+0%"
+  pitch: "+0Hz"
+  
+  # 性别相关的pitch调整（当音色与性别不匹配时使用）
+  gender_pitch_adjustment:
+    enabled: true  # 是否启用性别pitch调整
+    male_pitch: "-10Hz"  # 男角色pitch调整（更低沉）
+    female_pitch: "+10Hz"  # 女角色pitch调整（更高亢）
+    default_pitch: "+0Hz"  # 默认pitch调整
+
+# 音频处理配置
+audio:
+  output_format: "mp3"
+  sample_rate: 24000
+  bitrate: "48k"
+  # 临时文件目录
+  temp_dir: "temp_audio"
+  # 最终输出目录
+  output_dir: "output"
+
+# 文本处理配置
+text:
+  # 最大文本长度（字符数）
+  max_chunk_length: 1000
+  # 是否保留标点符号
+  preserve_punctuation: true
