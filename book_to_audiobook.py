@@ -117,26 +117,28 @@ class Config:
                 'character_voices': {
                     'default': 'longanhuan',
                     'character_genders': {},
+                    'character_ages': {},
                     'random_assignment': True,
                     'available_chinese_voices': [
                         'longanyang',
                         'longanhuan',
-                        'longxiaochun_v3',
-                        'longshu_v3',
-                        'longyichen_v3',
-                        'longwanjun_v3',
-                        'longxiaoxia_v3'
+                        'longxiaochun',
+                        'longshu',
+                        'longyichen',
+                        'longwanjun',
+                        'longxiaoxia'
+                    ],
+                    'child_voices': [
+                        'longhuhu', 'longjielidou', 'longpaopao', 'longshanshan', 'longniuniu'
+                    ],
+                    'elderly_voices': [
+                        'longlaobo', 'longlaoyi'
                     ],
                     'male_voices': [
-                        'longshu_v3',  # 沉稳青年男
-                        'longyichen_v3',  # 洒脱活力男
-                        'longjielidou_v3'  # 阳光顽皮男
+                        'longshu', 'longyichen'
                     ],
                     'female_voices': [
-                        'longanhuan',  # 欢脱元气女
-                        'longxiaochun_v3',  # 知性积极女
-                        'longwanjun_v3',  # 细腻柔声女
-                        'longxiaoxia_v3'  # 沉稳权威女
+                        'longanhuan', 'longxiaochun', 'longwanjun', 'longxiaoxia'
                     ]
                 }
             },
@@ -184,9 +186,7 @@ class DeepSeekAnalyzer:
             await self.session.close()
 
     async def analyze_text(self, text: str) -> List[Dict[str, Any]]:
-        """
-        分析文本，识别旁白和角色对话
-        """
+        """分析文本，识别旁白和角色对话"""
         if not self.session:
             self.session = aiohttp.ClientSession()
 
@@ -225,7 +225,7 @@ class DeepSeekAnalyzer:
 
     def _build_prompt(self, text: str) -> str:
         return f"""
-请分析以下文本，识别出旁白和各个角色的对话，并推断每个角色的性别。文本内容：
+请分析以下文本，识别出旁白和各个角色的对话，并推断每个角色的性别和年龄段。文本内容：
 
 {text[:2000]}...
 
@@ -240,6 +240,7 @@ class DeepSeekAnalyzer:
     "type": "character",
     "character": "角色名",
     "gender": "male/female/unknown",
+    "age_group": "child/adult/elderly/unknown",
     "text": "角色对话内容",
     "voice": "character_角色名"
   }},
@@ -250,12 +251,10 @@ class DeepSeekAnalyzer:
 1. 旁白：描述性文字、环境描写、心理活动等非对话内容
 2. 角色对话：引号内的内容，如"你好"、「你好」、『你好』等
 3. 如果无法确定角色名，使用"unknown"作为角色名
-4. 推断角色性别：根据角色名字、上下文、称呼等推断性别
-   - male: 男性角色
-   - female: 女性角色  
-   - unknown: 无法确定性别
-5. 保持文本的原始顺序
-6. 不要修改原始文本内容
+4. 推断角色性别：male (男性), female (女性), unknown (无法确定)
+5. 推断角色年龄段：根据角色名字、上下文和称谓推断。child (小孩/儿童), adult (成年人), elderly (老人/长辈), unknown (无法确定)
+6. 保持文本的原始顺序
+7. 不要修改原始文本内容
 """
 
     def _parse_analysis_result(self, result: str) -> List[Dict[str, Any]]:
@@ -330,8 +329,8 @@ class TTSEngine:
         self.config = config
         self.character_voice_assignments: Dict[str, str] = {}
         self.character_gender_cache: Dict[str, str] = {}
+        self.character_age_cache: Dict[str, str] = {}
 
-        # 配置 DashScope API Key
         api_key = self.config.get('dashscope.api_key')
         if api_key:
             dashscope.api_key = api_key
@@ -342,7 +341,6 @@ class TTSEngine:
             print("警告: 阿里百炼(DashScope) API Key 未配置！合成可能会失败。")
 
     async def initialize(self):
-        """初始化操作 (由于百炼通过类直接调用，这里可保留为空或做连接测试)"""
         pass
 
     def get_character_gender(self, character_name: str, segment: Dict[str, Any] = None) -> str:
@@ -381,63 +379,162 @@ class TTSEngine:
         self.character_gender_cache[character_name] = default_gender
         return default_gender
 
+    def get_character_age_group(self, character_name: str, segment: Dict[str, Any] = None) -> str:
+        """获取角色年龄段"""
+        if segment and 'age_group' in segment:
+            age = segment['age_group']
+            if age in ['child', 'adult', 'elderly']:
+                self.character_age_cache[character_name] = age
+                return age
+
+        if character_name in self.character_age_cache:
+            return self.character_age_cache[character_name]
+
+        character_ages = self.config.get('tts.character_voices.character_ages', {})
+        if character_name in character_ages:
+            age = character_ages[character_name]
+            self.character_age_cache[character_name] = age
+            return age
+
+        elderly_patterns = ['老伯', '大爷', '老奶奶', '大妈', '婆婆', '爷爷', '奶奶', '老叟', '长者', '村长']
+        child_patterns = ['小孩', '男童', '女童', '宝宝', '孩童', '小豆子', '囡囡']
+
+        for pattern in elderly_patterns:
+            if pattern in character_name:
+                self.character_age_cache[character_name] = 'elderly'
+                return 'elderly'
+
+        for pattern in child_patterns:
+            if pattern in character_name:
+                self.character_age_cache[character_name] = 'child'
+                return 'child'
+
+        default_age = 'adult'
+        self.character_age_cache[character_name] = default_age
+        return default_age
+
+    def _normalize_voice(self, configured_voice: str, model_name: str) -> str:
+        """根据配置的音色和使用的模型，自动适配出正确的模型音色参数"""
+        if 'v3' in model_name:
+            target_v = 'v3'
+            fallback = 'longxiaochun_v3'
+        elif 'v2' in model_name:
+            target_v = 'v2'
+            fallback = 'longxiaochun_v2'
+        else:
+            target_v = 'v1'
+            fallback = 'longxiaochun'
+
+        base_name = re.sub(r'_v[123]$', '', configured_voice)
+        v3_no_suffix = {'longanyang', 'longanhuan'}
+        v2_no_suffix = {
+            'longyingxiao', 'longjiqi', 'longhouge', 'longjixin', 'longanyue',
+            'longshange', 'longanmin', 'longdaiyu', 'longgaoseng', 'longanli',
+            'longanlang', 'longanwen', 'longanyun', 'longyichen', 'longwanjun',
+            'longlaobo', 'longlaoyi', 'longbaizhi', 'longsanshu', 'longanqin',
+            'longanya', 'longanshuo', 'longanling', 'longanzhi', 'longanrou',
+            'longhuhu', 'longanpei', 'longwangwang', 'longpaopao', 'longshanshan',
+            'longniuniu', 'longyingmu', 'longyingxun', 'longyingcui', 'longyingda',
+            'longyingjing', 'longyingyan', 'longyingtian', 'longyingbing', 'longyingtao',
+            'longyingling', 'longanran', 'longanxuan', 'longanchong', 'longanping'
+        }
+
+        if target_v != 'v3' and base_name in v3_no_suffix:
+            print(f"警告: 当前模型 {model_name} 不支持专属音色 '{base_name}'，自动回退至默认女声")
+            return fallback
+
+        if target_v == 'v3':
+            if base_name in v3_no_suffix:
+                return base_name
+            return f"{base_name}_v3"
+
+        elif target_v == 'v2':
+            if base_name in v2_no_suffix:
+                return base_name
+            return f"{base_name}_v2"
+
+        else:
+            return base_name
+
     def get_voice_for_segment(self, segment: Dict[str, Any]) -> str:
         """根据片段类型获取音色"""
         voice_config = self.config.get('tts', {})
+        raw_voice = ""
 
         if segment['type'] == 'narrator':
-            return voice_config.get('narrator_voice', 'longanyang')
+            raw_voice = voice_config.get('narrator_voice', 'longanyang')
         else:
             character = segment.get('character', 'default')
             character_voices_config = voice_config.get('character_voices', {})
 
             if character in character_voices_config and character_voices_config[character] != 'default':
-                return character_voices_config[character]
+                raw_voice = character_voices_config[character]
+            elif character in self.character_voice_assignments:
+                raw_voice = self.character_voice_assignments[character]
+            else:
+                age_group = self.get_character_age_group(character, segment)
+                character_gender = self.get_character_gender(character, segment)
 
-            if character in self.character_voice_assignments:
-                return self.character_voice_assignments[character]
+                child_voices = character_voices_config.get('child_voices', [])
+                elderly_voices = character_voices_config.get('elderly_voices', [])
+                male_voices = character_voices_config.get('male_voices', [])
+                female_voices = character_voices_config.get('female_voices', [])
 
-            character_gender = self.get_character_gender(character, segment)
-
-            male_voices = character_voices_config.get('male_voices', [])
-            female_voices = character_voices_config.get('female_voices', [])
-
-            if character_gender == 'male' and male_voices:
                 import random
-                selected_voice = random.choice(male_voices)
-                self.character_voice_assignments[character] = selected_voice
-                print(f"为男角色 '{character}' 分配音色: {selected_voice}")
-                return selected_voice
-            elif character_gender == 'female' and female_voices:
-                import random
-                selected_voice = random.choice(female_voices)
-                self.character_voice_assignments[character] = selected_voice
-                print(f"为女角色 '{character}' 分配音色: {selected_voice}")
-                return selected_voice
 
-            random_assignment = character_voices_config.get('random_assignment', True)
-            available_voices = character_voices_config.get('available_chinese_voices', [])
-
-            if random_assignment and available_voices:
-                import random
-                narrator_voice = voice_config.get('narrator_voice', 'longanyang')
-                candidate_voices = [v for v in available_voices if v != narrator_voice]
-
-                assigned_voices = set(self.character_voice_assignments.values())
-                available_candidate_voices = [v for v in candidate_voices if v not in assigned_voices]
-
-                if not available_candidate_voices:
-                    available_candidate_voices = candidate_voices
-
-                if available_candidate_voices:
-                    selected_voice = random.choice(available_candidate_voices)
+                if age_group == 'child' and child_voices:
+                    selected_voice = random.choice(child_voices)
                     self.character_voice_assignments[character] = selected_voice
-                    print(f"为角色 '{character}' 分配音色: {selected_voice}")
-                    return selected_voice
+                    print(f"为儿童角色 '{character}' 分配预选音色: {selected_voice}")
+                    raw_voice = selected_voice
 
-            default_voice = character_voices_config.get('default', 'longanhuan')
-            self.character_voice_assignments[character] = default_voice
-            return default_voice
+                elif age_group == 'elderly' and elderly_voices:
+                    selected_voice = random.choice(elderly_voices)
+                    self.character_voice_assignments[character] = selected_voice
+                    print(f"为老年角色 '{character}' 分配预选音色: {selected_voice}")
+                    raw_voice = selected_voice
+
+                elif character_gender == 'male' and male_voices:
+                    selected_voice = random.choice(male_voices)
+                    self.character_voice_assignments[character] = selected_voice
+                    print(f"为成年男角色 '{character}' 分配预选音色: {selected_voice}")
+                    raw_voice = selected_voice
+
+                elif character_gender == 'female' and female_voices:
+                    selected_voice = random.choice(female_voices)
+                    self.character_voice_assignments[character] = selected_voice
+                    print(f"为成年女角色 '{character}' 分配预选音色: {selected_voice}")
+                    raw_voice = selected_voice
+
+                else:
+                    random_assignment = character_voices_config.get('random_assignment', True)
+                    available_voices = character_voices_config.get('available_chinese_voices', [])
+
+                    if random_assignment and available_voices:
+                        narrator_voice = voice_config.get('narrator_voice', 'longanyang')
+                        candidate_voices = [v for v in available_voices if v != narrator_voice]
+
+                        assigned_voices = set(self.character_voice_assignments.values())
+                        available_candidate_voices = [v for v in candidate_voices if v not in assigned_voices]
+
+                        if not available_candidate_voices:
+                            available_candidate_voices = candidate_voices
+
+                        if available_candidate_voices:
+                            selected_voice = random.choice(available_candidate_voices)
+                            self.character_voice_assignments[character] = selected_voice
+                            print(f"为角色 '{character}' 随机分配兜底音色: {selected_voice}")
+                            raw_voice = selected_voice
+                        else:
+                            raw_voice = character_voices_config.get('default', 'longanhuan')
+                            self.character_voice_assignments[character] = raw_voice
+                    else:
+                        raw_voice = character_voices_config.get('default', 'longanhuan')
+                        self.character_voice_assignments[character] = raw_voice
+
+        model_name = self.config.get('dashscope.model', 'cosyvoice-v3-flash')
+        normalized_voice = self._normalize_voice(raw_voice, model_name)
+        return normalized_voice
 
     async def synthesize_segment(self, segment: Dict[str, Any], output_path: str) -> bool:
         """合成单个文本片段为音频"""
@@ -446,19 +543,15 @@ class TTSEngine:
             text = segment['text']
             model = self.config.get('dashscope.model', 'cosyvoice-v3-flash')
 
-            # 使用 DashScope 的同步调用，但在异步线程池中运行以防阻塞主循环
             loop = asyncio.get_event_loop()
 
             def _call_dashscope():
-                # 实例化合成器
                 synthesizer = SpeechSynthesizer(model=model, voice=voice)
-                # 调用获取二进制音频流
                 audio_data = synthesizer.call(text)
 
                 if audio_data is None:
                     raise Exception("百炼返回的音频数据为空")
 
-                # 写入文件
                 with open(output_path, 'wb') as f:
                     f.write(audio_data)
 
@@ -653,7 +746,7 @@ class BookToAudiobook:
 def main():
     """主函数"""
     import argparse
-    import os  # 确保引入了os
+    import os
 
     parser = argparse.ArgumentParser(description='小说/文章转有声书工具 (基于阿里百炼 CosyVoice)')
     parser.add_argument('input', help='输入文本或文件路径')
@@ -663,10 +756,8 @@ def main():
 
     args = parser.parse_args()
 
-    # 创建转换器实例
     converter = BookToAudiobook(args.config)
 
-    # 【修改核心逻辑】：如果用户加了 -f，或者输入的内容恰好是一个真实存在的文件路径，就走文件模式
     is_file_mode = args.file or os.path.isfile(args.input)
 
     if is_file_mode:
@@ -675,11 +766,9 @@ def main():
             sys.exit(1)
 
         print(f"正在读取文件: {args.input}")
-        # 输入是文件
         success = converter.convert_file(args.input, args.output)
     else:
         print("正在处理直接输入的文本内容...")
-        # 输入是文本，直接运行异步转换
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:

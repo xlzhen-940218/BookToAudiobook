@@ -61,3 +61,4 @@ logs/
 # 系统文件
 .DS_Store
 Thumbs.db
+test_gender_analysis.json

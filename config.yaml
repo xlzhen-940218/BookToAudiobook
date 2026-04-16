@@ -1,70 +1,127 @@
 # DeepSeek API配置
-# 注意：API密钥已移至单独的配置文件 api_keys.yaml 或环境变量 DEEPSEEK_API_KEY
+# 注意：API密钥建议配置在 api_keys.yaml 或环境变量 DEEPSEEK_API_KEY 中
 deepseek:
-  # api_key: "your-api-key-here"  # 已移至 api_keys.yaml
   base_url: "https://api.deepseek.com"
   model: "deepseek-chat"
 
 # 阿里百炼 (DashScope) 语音合成配置
-# 注意：API密钥建议配置在 api_keys.yaml 或环境变量 DASHSCOPE_API_KEY
+# 注意：API密钥建议配置在 api_keys.yaml 或环境变量 DASHSCOPE_API_KEY 中
 dashscope:
-  # api_key: "your-dashscope-api-key" # 已移至 api_keys.yaml
-  model: "cosyvoice-v3-flash" # 阿里百炼最新的高并发/低延迟模型
+  # 可选模型: cosyvoice-v3-flash, cosyvoice-v3-plus, cosyvoice-v2, cosyvoice-v1
+  model: "cosyvoice-v2"
 
 # 语音合成配置
 tts:
-  # 默认音色（旁白）
-  narrator_voice: "longanyang"  # 阳光大男孩，适合做旁白讲述
+  # 默认旁白音色（推荐：longanyang 阳光男，longshu 沉稳男，longbaizhi 睿气女）
+  narrator_voice: "longanyang"
 
   # 角色音色配置
   character_voices:
-    # 默认音色（当角色没有特定音色或随机分配时使用）
-    default: "longanhuan"  # 欢脱元气女
+    # 默认兜底音色（如果所有分配策略都失败，使用此音色）
+    default: "longanhuan"
 
-    # 可以在这里添加特定角色的音色映射（优先级最高）
-    # 例如: "张三": "longshu_v3"
-
-    # 角色性别配置（用于音色选择）
-    # 可以在这里添加特定角色的性别配置
-    # 例如: "张三": "male", "李四": "female"
+    # 【手动强制指定】如果你发现AI推断错误，可以在这里直接写死某个角色的性别和年龄段
+    # 例如：
+    # character_genders:
+    #   "村长": "male"
+    #   "翠花": "female"
     character_genders: {}
 
-    # 随机音色分配选项
-    random_assignment: true  # 是否启用随机音色分配
-    # 可用的中文音色列表（用于随机分配）- 使用阿里百炼的音色
-    available_chinese_voices:
-      - "longanyang"      # 男声，阳光大男孩（旁白默认）
-      - "longanhuan"      # 女声，欢脱元气女
-      - "longxiaochun_v3" # 女声，知性积极女
-      - "longshu_v3"      # 男声，沉稳青年男
-      - "longyichen_v3"   # 男声，洒脱活力男
-      - "longwanjun_v3"   # 女声，细腻柔声女
-      - "longxiaoxia_v3"  # 女声，沉稳权威女
+    # 例如：
+    # character_ages:
+    #   "村长": "elderly"
+    #   "狗蛋": "child"
+    character_ages: {}
 
-    # 音色性别分类（用于自动分配）
+    # 是否开启随机音色分配（开启后将从下方的可用池中随机抽取对应属性的音色）
+    random_assignment: true
+
+    # ==========================
+    # 按照年龄段和性别分类的音色池
+    # ==========================
+
+    # 1. 儿童音色池 (优先判断)
+    child_voices:
+      - "longhuhu"       # 天真烂漫女童 (6~10岁)
+      - "longpaopao"     # 飞天泡泡音 (6~15岁)
+      - "longjielidou"   # 阳光顽皮男童 (10岁)
+      - "longxian"       # 豪放可爱女童 (12岁)
+      - "longling"       # 稚气呆板女童 (10岁)
+      - "longshanshan"   # 戏剧化童声 (6~15岁)
+      - "longniuniu"     # 阳光男童声 (6~15岁)
+      - "longwangwang"   # 台湾少年音 (v2特有)
+      - "longke"         # 懵懂乖乖女 (v2特有)
+
+    # 2. 老年音色池 (优先判断)
+    elderly_voices:
+      - "longlaobo"      # 沧桑岁月大爷 (60岁以上)
+      - "longlaoyi"      # 烟火从容阿姨 (60岁以上)
+      - "longgaoseng"    # 得道高僧音 (v2特有)
+
+    # 3. 成年男性音色池
     male_voices:
-      - "longshu_v3"       # 沉稳青年男
-      - "longyichen_v3"    # 洒脱活力男
-      - "longjielidou_v3"  # 阳光顽皮男（少年音）
+      - "longshu"        # 沉稳青年男
+      - "longyichen"     # 洒脱活力男
+      - "longzhe"        # 呆板大暖男
+      - "longze"         # 温暖元气男
+      - "longcheng"      # 智慧青年男
+      - "longtian"       # 磁性理智男
+      - "longhao"        # 多情忧郁男
+      - "longhan"        # 温暖痴情男
+      - "longanzhi"      # 睿智轻熟男
+      - "longxiu"        # 博才说书男
+      - "longnan"        # 睿智青年男
+      - "longshuo"       # 博才干练男
+      - "longfei"        # 热血磁性男
+      - "longanshuo"     # 干净清爽男 (v2特有)
+      - "longxiaocheng"  # 磁性低音男 (v2特有)
+      - "longshao"       # 积极向上男 (v2特有)
+      - "longjin"        # 优雅温润男 (v2特有)
+      - "libai"          # 古代诗仙男 (v2特有)
+
+    # 4. 成年女性音色池
     female_voices:
-      - "longanhuan"       # 欢脱元气女
-      - "longxiaochun_v3"  # 知性积极女
-      - "longwanjun_v3"    # 细腻柔声女
-      - "longxiaoxia_v3"   # 沉稳权威女
+      - "longanhuan"     # 欢脱元气女
+      - "longxiaochun"   # 知性积极女
+      - "longxiaoxia"    # 沉稳权威女
+      - "longwanjun"     # 细腻柔声女
+      - "longmiao"       # 抑扬顿挫女
+      - "longyuan"       # 温暖治愈女
+      - "longyue"        # 温暖磁性女
+      - "longhua"        # 元气甜美女
+      - "longyan"        # 温暖春风女
+      - "longxing"       # 温婉邻家女
+      - "longwan"        # 细腻柔声女
+      - "longqiang"      # 浪漫风情女
+      - "longfeifei"     # 甜美娇气女
+      - "longanrou"      # 温柔闺蜜女
+      - "longanling"     # 思维灵动女
+      - "longanya"       # 高雅气质女
+      - "longanqin"      # 亲和活泼女
+      - "loongbella"     # 精准干练女
+      - "longjixin"      # 毒舌心机女 (v2特有)
+      - "longbaizhi"     # 睿气旁白女 (v2特有)
+      - "loongstella"    # 飒爽利落女 (v2特有)
+
+    # 5. 通用可用音色池 (当没有男/女/老/少分类匹配时，随机兜底)
+    available_chinese_voices:
+      - "longanhuan"
+      - "longxiaochun"
+      - "longshu"
+      - "longyichen"
+      - "longwanjun"
+      - "longxiaoxia"
 
 # 音频处理配置
 audio:
   output_format: "mp3"
   sample_rate: 24000
   bitrate: "48k"
-  # 临时文件目录
   temp_dir: "temp_audio"
-  # 最终输出目录
   output_dir: "output"
 
 # 文本处理配置
 text:
-  # 最大文本长度（字符数）- 建议保持1000左右，百炼API对单次合成长度有一定限制
+  # 单个文本片段的最大字符数 (防止百炼API超限)
   max_chunk_length: 1000
-  # 是否保留标点符号
   preserve_punctuation: true
