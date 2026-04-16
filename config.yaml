@@ -1,56 +1,56 @@
 # DeepSeek API配置
-# 注意：API密钥已移至单独的配置文件 api_keys.yaml
-# 请创建 api_keys.yaml 文件并添加您的API密钥
+# 注意：API密钥已移至单独的配置文件 api_keys.yaml 或环境变量 DEEPSEEK_API_KEY
 deepseek:
   # api_key: "your-api-key-here"  # 已移至 api_keys.yaml
   base_url: "https://api.deepseek.com"
   model: "deepseek-chat"
 
+# 阿里百炼 (DashScope) 语音合成配置
+# 注意：API密钥建议配置在 api_keys.yaml 或环境变量 DASHSCOPE_API_KEY
+dashscope:
+  # api_key: "your-dashscope-api-key" # 已移至 api_keys.yaml
+  model: "cosyvoice-v3-flash" # 阿里百炼最新的高并发/低延迟模型
+
 # 语音合成配置
 tts:
   # 默认音色（旁白）
-  narrator_voice: "zh-CN-XiaoxiaoNeural"
-  
+  narrator_voice: "longanyang"  # 阳光大男孩，适合做旁白讲述
+
   # 角色音色配置
   character_voices:
     # 默认音色（当角色没有特定音色或随机分配时使用）
-    default: "zh-CN-YunxiNeural"
+    default: "longanhuan"  # 欢脱元气女
+
     # 可以在这里添加特定角色的音色映射（优先级最高）
-    # 例如: "张三": "zh-CN-YunyangNeural"
-    
-    # 角色性别配置（用于音色选择和pitch调整）
+    # 例如: "张三": "longshu_v3"
+
+    # 角色性别配置（用于音色选择）
     # 可以在这里添加特定角色的性别配置
     # 例如: "张三": "male", "李四": "female"
     character_genders: {}
-    
+
     # 随机音色分配选项
     random_assignment: true  # 是否启用随机音色分配
-    # 可用的中文音色列表（用于随机分配）- 使用可靠可用的音色
+    # 可用的中文音色列表（用于随机分配）- 使用阿里百炼的音色
     available_chinese_voices:
-      - "zh-CN-XiaoxiaoNeural"  # 女声，可靠（旁白默认）
-      - "zh-CN-YunxiNeural"     # 男声，可靠（角色默认）
-      - "zh-CN-YunyangNeural"   # 男声，可靠
-      - "zh-CN-XiaoyiNeural"    # 女声，可靠
-    
+      - "longanyang"      # 男声，阳光大男孩（旁白默认）
+      - "longanhuan"      # 女声，欢脱元气女
+      - "longxiaochun_v3" # 女声，知性积极女
+      - "longshu_v3"      # 男声，沉稳青年男
+      - "longyichen_v3"   # 男声，洒脱活力男
+      - "longwanjun_v3"   # 女声，细腻柔声女
+      - "longxiaoxia_v3"  # 女声，沉稳权威女
+
     # 音色性别分类（用于自动分配）
     male_voices:
-      - "zh-CN-YunxiNeural"
-      - "zh-CN-YunyangNeural"
+      - "longshu_v3"       # 沉稳青年男
+      - "longyichen_v3"    # 洒脱活力男
+      - "longjielidou_v3"  # 阳光顽皮男（少年音）
     female_voices:
-      - "zh-CN-XiaoxiaoNeural"
-      - "zh-CN-XiaoyiNeural"
-  
-  # 语音参数
-  rate: "+0%"
-  volume: "+0%"
-  pitch: "+0Hz"
-  
-  # 性别相关的pitch调整（当音色与性别不匹配时使用）
-  gender_pitch_adjustment:
-    enabled: true  # 是否启用性别pitch调整
-    male_pitch: "-10Hz"  # 男角色pitch调整（更低沉）
-    female_pitch: "+10Hz"  # 女角色pitch调整（更高亢）
-    default_pitch: "+0Hz"  # 默认pitch调整
+      - "longanhuan"       # 欢脱元气女
+      - "longxiaochun_v3"  # 知性积极女
+      - "longwanjun_v3"    # 细腻柔声女
+      - "longxiaoxia_v3"   # 沉稳权威女
 
 # 音频处理配置
 audio:
@@ -64,7 +64,7 @@ audio:
 
 # 文本处理配置
 text:
-  # 最大文本长度（字符数）
+  # 最大文本长度（字符数）- 建议保持1000左右，百炼API对单次合成长度有一定限制
   max_chunk_length: 1000
   # 是否保留标点符号
   preserve_punctuation: true
