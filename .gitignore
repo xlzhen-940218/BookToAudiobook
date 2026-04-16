@@ -64,3 +64,6 @@ Thumbs.db
 test_gender_analysis.json
 test_input_analysis.json
 test_input.txt
+test_gender_roles.txt
+test_input.txt
+test_output_analysis.json
