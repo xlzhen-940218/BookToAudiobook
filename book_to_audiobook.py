@@ -255,6 +255,7 @@ class DeepSeekAnalyzer:
 5. 推断角色年龄段：根据角色名字、上下文和称谓推断。child (小孩/儿童), adult (成年人), elderly (老人/长辈), unknown (无法确定)
 6. 保持文本的原始顺序
 7. 不要修改原始文本内容
+8. 如果不是简体中文内容，请统一成简体中文
 """
 
     def _parse_analysis_result(self, result: str) -> List[Dict[str, Any]]:
